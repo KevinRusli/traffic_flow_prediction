@@ -16,13 +16,13 @@ from an origin to a destination SCATS site, through a CLI and a GUI.
 
 | | Member | Student ID | Role | Owns (files) | Rubric marks owned |
 |---|---|---|---|---|---|
-| **M1** | _name_ | _id_ | **Data & Graph + Test lead** | `src/data/*`, `src/graph/build_graph.py`, `notebooks/01_eda`, `tests/test_data.py`, `tests/test_graph.py`, `docs/TEST_CASES.md` | Data processing **9** + Testing **10** (lead) |
+| **M1** | _Kevin Emmanuel Rusli_ | _105801758_ | **Data & Graph + Test lead** | `src/data/*`, `src/graph/build_graph.py`, `notebooks/01_eda`, `tests/test_data.py`, `tests/test_graph.py`, `docs/TEST_CASES.md` | Data processing **9** + Testing **10** (lead) |
 | **M2** | _name_ | _id_ | **Deep Learning + GUI** | `src/models/lstm.py`, `src/models/gru.py`, `src/training/train.py`, `app/gui.py` | ML algorithms **14** (LSTM + GRU) |
 | **M3** | _name_ | _id_ | **Third model + Evaluation + Research** | `src/models/third_model.py`, `src/evaluation/*`, `results/` | ML algorithm **7** + Evaluation **15** + Research **15** (lead) |
 | **M4** | _name_ | _id_ | **Integration (Part A port + routing)** | `src/search/*`, `src/routing/*`, `src/prediction/predictor.py`, `main.py` | Integration **15** |
 | All | | | Report sections (see `docs/REPORT_PLAN.md`) | `report/` | Report **15** |
 
-### Member 1 - Data & Graph + Test lead
+### Member 1 (Kevin) - Data & Graph + Test lead
 - [ ] `load_raw`, `to_long`, `fix_coordinates`, `load_long` (read `docs/DATA_NOTES.md` first - 5 quirks to handle)
 - [ ] `make_windows`, `chronological_split`, `build_dataset`, `latest_window`
 - [ ] **Priority:** push a working `load_long()` + `build_dataset()` by **Sun 8 Nov** - M2 and M3 depend on it
