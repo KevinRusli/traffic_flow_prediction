@@ -1,8 +1,4 @@
-"""Name -> search function, using the same method names as the 2A CLI.
-
-    from src.search.methods import SEARCH_METHODS
-    goal, nodes_created, path = SEARCH_METHODS["AS"](problem)
-"""
+"""Search method names (same as the 2A CLI) mapped to the 2A search functions."""
 from __future__ import annotations
 
 from typing import Callable
@@ -16,12 +12,9 @@ SEARCH_METHODS: dict[str, SearchFn] = {
     "BFS": bfs.search,
     "GBFS": gbfs.search,
     "AS": astar.search,
-    "CUS1": cus1.search,   # bidirectional BFS (fewest edges)
-    "CUS2": cus2.search,   # A* on number of moves (fewest edges)
+    "CUS1": cus1.search,
+    "CUS2": cus2.search,
 }
-
-#: Methods guaranteed to return the cheapest (= fastest) path.
-OPTIMAL_METHODS = {"AS"}
 
 
 def get_search(name: str) -> SearchFn:

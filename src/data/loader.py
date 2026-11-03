@@ -1,6 +1,6 @@
 """Load the raw SCATS October 2006 dataset into clean pandas structures.
 
-OWNER: Kevin (Data processing)
+OWNER: Kevin
 
 Contract (other members depend on these exact column names - do not rename):
 
@@ -12,13 +12,16 @@ Contract (other members depend on these exact column names - do not rename):
         timestamp pandas.Timestamp start of the 15-min interval
         flow      float            vehicles counted in that 15-min interval
 
-See docs/DATA_NOTES.md for the quirks you have to handle (header row, duplicate
-rows, zero coordinates, missing days, the odd 00:15 timestamp in the Date column).
+Data quirks handled here (details in docs/DATA_NOTES.md): the header is on the
+2nd row, Date says 00:15 for a day starting at 00:00, site 4335 has two
+detectors under one name, one approach of site 4266 has no coordinates, and all
+coordinates are offset from the real intersections.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from src.config import load_config, resolve_path
@@ -26,46 +29,114 @@ from src.config import load_config, resolve_path
 VOLUME_COLUMNS = [f"V{i:02d}" for i in range(96)]
 LONG_COLUMNS = ["scats", "location", "lat", "lon", "timestamp", "flow"]
 
+_RENAME = {
+    "SCATS Number": "scats",
+    "Location": "location",
+    "NB_LATITUDE": "lat",
+    "NB_LONGITUDE": "lon",
+    "Date": "date",
+}
+_DETECTOR_ID = "VR Internal Loc"
+
 
 def load_raw(path: str | Path | None = None) -> pd.DataFrame:
-    """Read the 'Data' sheet of the SCATS workbook and return the wide table.
-
-    TODO(Kevin):
-      - read with the correct header row (config: data.header_row)
-      - keep only: SCATS Number, Location, NB_LATITUDE, NB_LONGITUDE, Date, V00..V95
-      - rename SCATS Number -> scats, Location -> location, NB_LATITUDE -> lat,
-        NB_LONGITUDE -> lon, Date -> date
-      - normalise `date` to midnight (the raw value is 'YYYY-MM-DD 00:15')
-      - drop exact duplicate rows (site 4335 is duplicated)
-    """
+    """Read the 'Data' sheet and return the wide table (one row per location per day)."""
     cfg = load_config()
     path = resolve_path(path or cfg["paths"]["scats_data"])
-    raise NotImplementedError("Kevin: implement load_raw()")
+    raw = pd.read_excel(path, sheet_name=cfg["data"]["sheet_name"], header=cfg["data"]["header_row"])
+
+    df = raw[list(_RENAME) + [_DETECTOR_ID] + VOLUME_COLUMNS].rename(columns=_RENAME)
+    df["scats"] = df["scats"].astype(int)
+    df["location"] = df["location"].str.strip()
+    # Date is stored as 'YYYY-MM-DD 00:15' but V00 starts at 00:00
+    df["date"] = pd.to_datetime(df["date"]).dt.normalize()
+    df[VOLUME_COLUMNS] = df[VOLUME_COLUMNS].astype(float)
+
+    df = _split_shared_location_names(df)
+    df = df.drop(columns=[_DETECTOR_ID]).drop_duplicates()
+    return df.sort_values(["location", "date"]).reset_index(drop=True)
+
+
+def _split_shared_location_names(df: pd.DataFrame) -> pd.DataFrame:
+    """Rename the 2nd detector sharing a location name to "<name> #2".
+
+    Site 4335 has two detectors (different VR Internal Loc and counts) both
+    called "HIGH_ST NE of CHARLES_ST"; merging them would mix two series.
+    """
+    detectors = df.groupby("location")[_DETECTOR_ID].unique()
+    for location, ids in detectors.items():
+        for n, det in enumerate(sorted(ids)[1:], start=2):
+            rows = (df["location"] == location) & (df[_DETECTOR_ID] == det)
+            df.loc[rows, "location"] = f"{location} #{n}"
+    return df
 
 
 def to_long(df_wide: pd.DataFrame) -> pd.DataFrame:
-    """Melt V00..V95 into one row per 15-minute interval (see LONG_COLUMNS).
+    """Melt V00..V95 into one row per 15-minute interval (see LONG_COLUMNS)."""
+    minutes = load_config()["data"]["interval_minutes"]
+    long = df_wide.melt(
+        id_vars=["scats", "location", "lat", "lon", "date"],
+        value_vars=VOLUME_COLUMNS,
+        var_name="interval",
+        value_name="flow",
+    )
+    # "V37" -> 37 * 15 minutes after midnight
+    offset = pd.to_timedelta(long["interval"].str[1:].astype(int) * minutes, unit="min")
+    long["timestamp"] = long["date"] + offset
+    long = long.sort_values(["location", "timestamp"]).reset_index(drop=True)
+    return long[LONG_COLUMNS]
 
-    TODO(Kevin): timestamp = date + interval_index * 15 minutes, sorted by
-    (location, timestamp).
+
+def fix_coordinates(df: pd.DataFrame, counts_csv: str | Path | None = None) -> pd.DataFrame:
+    """Fill missing (0.0) coordinates, then shift everything by the config offset.
+
+    A missing approach takes the median of the other approaches of the same site.
+    Only if a whole site is missing is it looked up in the Traffic_Count CSV, whose
+    coordinates are already real-world, so they skip the offset. The offset was
+    checked against that CSV on sites 2000, 3002, 970 and 4266
+    (difference ~ +0.0015 lat, +0.0013 lon).
     """
-    raise NotImplementedError("Kevin: implement to_long()")
+    cfg = load_config()
+    off = cfg["data"]["coord_offset"]
+    df = df.copy()
+
+    missing = (df["lat"] == 0) | (df["lon"] == 0) | df["lat"].isna() | df["lon"].isna()
+    df.loc[~missing, "lat"] += off["lat"]
+    df.loc[~missing, "lon"] += off["lon"]
+
+    counts = None
+    for site in df.loc[missing, "scats"].unique():
+        rows = missing & (df["scats"] == site)
+        known = ~missing & (df["scats"] == site)
+        if known.any():
+            # approaches of one site are within ~50 m of each other
+            lat, lon = df.loc[known, "lat"].median(), df.loc[known, "lon"].median()
+        else:
+            if counts is None:
+                csv_path = resolve_path(counts_csv or "data/raw/Traffic_Count_Locations_with_LONG_LAT.csv")
+                counts = pd.read_csv(csv_path, usecols=["X", "Y", "SITE_DESC"])
+            lat, lon = _lookup_site(df[df["scats"] == site]["location"].unique(), counts)
+        df.loc[rows, "lat"], df.loc[rows, "lon"] = lat, lon
+    return df
 
 
-def fix_coordinates(df: pd.DataFrame) -> pd.DataFrame:
-    """Fix zero lat/lon (site 4266) and apply the offset from config.
+def _lookup_site(locations, counts: pd.DataFrame) -> tuple[float, float]:
+    """Median real-world (lat, lon) of count points whose description names both roads."""
+    from src.graph.build_graph import parse_location
 
-    TODO(Kevin): fill missing coordinates from the site listing / Traffic_Count CSV
-    or from the other rows of the same site, then add data.coord_offset.
-    """
-    raise NotImplementedError("Kevin: implement fix_coordinates()")
+    road, _, cross = parse_location(locations[0])
+    a, b = (r.replace("_", " ").upper() for r in (road, cross))
+    desc = counts["SITE_DESC"].fillna("").str.upper()
+    hits = counts[desc.str.contains(a, regex=False) & desc.str.contains(b, regex=False)]
+    if hits.empty:
+        raise ValueError(f"No coordinates found for {locations[0]} - add them by hand")
+    return float(np.median(hits["Y"])), float(np.median(hits["X"]))
 
 
 def load_long(path: str | Path | None = None, use_cache: bool = True) -> pd.DataFrame:
-    """Convenience entry point used by everyone else.
+    """Cleaned long DataFrame, cached in data/processed/ after the first call.
 
-    Returns the cleaned long DataFrame. Caches it as a parquet/csv file in
-    data/processed/ so the Excel file is only parsed once.
+    Delete the cache file after changing this module.
     """
     cfg = load_config()
     cache = resolve_path(cfg["paths"]["processed_dir"]) / "scats_long.csv"

@@ -67,3 +67,25 @@ def test_tc27_route_lists_roads_for_the_gui():
     assert route.roads == ["Warrigal Rd", "Riversdale Rd", "Burke Rd"]
     assert route.travel_time_min == pytest.approx(320 / 60)
     assert route.distance_km == pytest.approx(3.5)
+
+
+class _LastValueModel:
+    """Stand-in for a trained model: predicts the last value of each window."""
+
+    def predict(self, X):
+        return X[:, -1]
+
+
+def test_tc30_model_predictor_returns_vehicles_per_hour(toy_long_df):
+    from sklearn.preprocessing import MinMaxScaler
+
+    from src.prediction.predictor import ModelPredictor
+
+    scaler = MinMaxScaler().fit(toy_long_df[["flow"]].to_numpy())
+    predictor = ModelPredictor("lstm", model=_LastValueModel(), scaler=scaler, df_long=toy_long_df)
+    # site 100 at 08:00 -> last input is the 07:45 count = 7 * 10 = 70 per 15 min -> 280 per hour
+    assert predictor.predict_flow(100, datetime(2006, 10, 2, 8, 0)) == pytest.approx(280.0)
+    # 08:07 falls in the same 15-minute slot
+    assert predictor.predict_flow(100, datetime(2006, 10, 2, 8, 7)) == pytest.approx(280.0)
+    with pytest.raises(ValueError):
+        predictor.predict_flow(999, datetime(2006, 10, 2, 8, 0))

@@ -4,8 +4,6 @@
     python main.py evaluate
     python main.py route    --origin 2000 --dest 3002 --time "2006-10-15 08:00" [--model gru] [--k 5] [--method AS]
     python main.py gui
-
-The CLI is plumbing only: each command calls into src/ where the real work lives.
 """
 from __future__ import annotations
 

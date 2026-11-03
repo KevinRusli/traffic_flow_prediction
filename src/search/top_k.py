@@ -1,23 +1,15 @@
-"""Top-k loopless routes with Yen's algorithm, on top of our 2A search methods.
+"""Up to k different routes with Yen's algorithm, using our 2A search methods.
 
-OWNER: Kevin (Integration A2A)
+OWNER: Kevin
 
-The spec asks for up to 5 routes from O to D. One 2A search returns one path,
-so we use Yen's algorithm (https://en.wikipedia.org/wiki/Yen%27s_algorithm):
+1. Route 1 is a normal 2A search from the origin.
+2. For each node of the last accepted route (the spur node), hide the edges
+   that earlier routes took from the same prefix, hide the prefix's nodes, and
+   search again from the spur node. Prefix + new path is a candidate.
+3. The cheapest candidate becomes the next route. Repeat until k routes.
 
-  1. Route 1 = the normal 2A search from the origin.
-  2. For each node on the previous route (the "spur node"):
-       - keep the part of the route before it (the "root"),
-       - hide the next edge of every accepted route that shares this root,
-         and hide the root's nodes so the new route cannot loop back,
-       - run the 2A search again from the spur node -> a detour,
-       - root + detour = a candidate route.
-  3. The cheapest candidate becomes the next route. Repeat until k routes.
-
-With "AS" (A*) every inner search is optimal, so the result is the true k
-fastest routes. With other methods the routes are still distinct and loopless,
-just not guaranteed to be the fastest - which is itself a nice comparison for
-the Research section.
+With AS every inner search is optimal, so the result is the k fastest routes.
+Other methods still give distinct loopless routes, but not necessarily the fastest.
 """
 from __future__ import annotations
 
@@ -67,10 +59,9 @@ def k_shortest_paths(
         prev = accepted[-1].path
         for i in range(len(prev) - 1):
             spur, root = prev[i], prev[: i + 1]
-            # hide the edge leaving the root on every accepted route with this root
             banned_edges = {(r.path[i], r.path[i + 1]) for r in accepted
                             if len(r.path) > i + 1 and r.path[: i + 1] == root}
-            banned_nodes = set(root[:-1])          # no looping back into the root
+            banned_nodes = set(root[:-1])
 
             detour, created = run(spur, banned_nodes, banned_edges)
             if detour is None:
@@ -82,7 +73,7 @@ def k_shortest_paths(
             heapq.heappush(candidates, (full.path_cost(list(route)), route, created))
 
         if not candidates:
-            break                                   # fewer than k routes exist
+            break
         cost, route, created = heapq.heappop(candidates)
         accepted.append(SearchResult(list(route), cost, created))
 

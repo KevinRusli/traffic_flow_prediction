@@ -1,10 +1,9 @@
-"""End-to-end route guidance: (origin, destination, time, model) -> top-k routes.
+"""Route guidance: (origin, destination, time, model) -> up to k routes.
 
-OWNER: Kevin (Integration A2A). Uses Hassan's travel_time.py and the predictor.
+OWNER: Kevin. Edge times come from travel_time.py (Hassan).
 
-This is what the GUI and `python main.py route ...` call. A Route carries
-everything the GUI needs to look like a simple Google Maps result:
-total minutes, distance, and the list of roads driven ("Warrigal Rd -> ...").
+Used by main.py and the GUI. Each Route has its total minutes, distance and
+the roads driven, which is what the GUI shows.
 """
 from __future__ import annotations
 
@@ -47,10 +46,7 @@ class Route:
 
     @property
     def roads(self) -> list[str]:
-        """Road names in driving order, consecutive duplicates merged.
-
-        [Warrigal, Warrigal, Riversdale, Burke] -> [Warrigal, Riversdale, Burke]
-        """
+        """Road names in driving order, with repeats of the same road merged."""
         names: list[str] = []
         for seg in self.segments:
             if seg.road and (not names or names[-1] != seg.road):
@@ -69,7 +65,7 @@ class RouteFinder:
         self.cfg = cfg or load_config()
 
     def _edge_cost_fn(self, when: datetime):
-        """Return cost_fn(edge) -> seconds, cached so each edge is predicted once."""
+        """cost_fn(edge) -> seconds, cached so each edge is predicted once per query."""
         use_dest = self.cfg["prediction"]["edge_flow_site"] == "destination"
         cache: dict[tuple[int, int], float] = {}
 

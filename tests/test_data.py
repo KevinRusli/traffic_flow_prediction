@@ -3,14 +3,16 @@ import numpy as np
 import pandas as pd
 
 from src.data.loader import LONG_COLUMNS, VOLUME_COLUMNS, fix_coordinates, load_raw, to_long
-from src.data.preprocess import build_dataset, chronological_split, make_windows
+from src.data.preprocess import build_dataset, chronological_split, latest_window, make_windows
 
 
 def test_tc01_load_raw_structure(scats_file):
     df = load_raw(scats_file)
     assert set(VOLUME_COLUMNS).issubset(df.columns)
     assert df["scats"].nunique() == 40
-    assert not df.duplicated().any(), "duplicate rows (site 4335) must be removed"
+    assert df["location"].nunique() == 140, "139 names + the 2nd detector of site 4335"
+    assert not df.duplicated(["location", "date"]).any(), "one row per location per day"
+    assert "HIGH_ST NE of CHARLES_ST #2" in set(df["location"])
 
 
 def test_tc02_to_long_shape(scats_file):
@@ -46,3 +48,15 @@ def test_tc06_build_dataset_shapes(toy_long_df):
     assert ds.X_train.shape[1] == 12 and ds.X_train.shape[0] == ds.y_train.shape[0]
     assert ds.X_test.shape[1] == 12
     assert ds.X_train.min() >= 0 and ds.X_train.max() <= 1, "scaler must be fit on train"
+
+
+def test_tc29_latest_window_maps_to_same_weekday(toy_long_df):
+    """Inside the data: the real previous 12 flows. Outside: same weekday + time in the data."""
+    loc = "A_RD N of B_RD"
+    inside = latest_window(toy_long_df, loc, pd.Timestamp("2006-10-02 08:00"), 12)
+    expected = toy_long_df[(toy_long_df["location"] == loc)
+                           & (toy_long_df["timestamp"] >= pd.Timestamp("2006-10-02 05:00"))
+                           & (toy_long_df["timestamp"] < pd.Timestamp("2006-10-02 08:00"))]["flow"]
+    np.testing.assert_array_equal(inside, expected.to_numpy())
+    # 2026-11-02 is a Monday; so is 2006-10-02 -> same window
+    np.testing.assert_array_equal(latest_window(toy_long_df, loc, pd.Timestamp("2026-11-02 08:00"), 12), inside)

@@ -29,6 +29,13 @@ def _reachable(graph, a, b):
 def test_tc07_parse_location():
     assert parse_location("WARRIGAL_RD N of TOORAK_RD") == ("WARRIGAL_RD", "N", "TOORAK_RD")
     assert parse_location("HIGH_ST NE OF HARP_ST") == ("HIGH_ST", "NE", "HARP_ST")
+    assert parse_location("HIGH_ST NE of CHARLES_ST #2") == ("HIGH_ST", "NE", "CHARLES_ST")
+    assert parse_location("STUDLEY PARK_RD W of PRINCESS_ST") == ("STUDLEY PARK_RD", "W", "PRINCESS_ST")
+
+
+def test_tc07b_every_dataset_location_parses(scats_file):
+    for location in load_raw(scats_file)["location"].unique():
+        parse_location(location)          # raises ValueError if a name is not understood
 
 
 def test_tc08_graph_nodes_and_degree(real_graph):
