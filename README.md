@@ -15,13 +15,13 @@ Google Maps: each route shows its **total minutes** and **the roads it takes**.
 The split follows the tutor's list (Model 1, Model 2, Model 3, Integration A2A, Calculation of time,
 GUI, Research). Data processing is not on the list but everything depends on it, so it goes first.
 
-|Member|Student ID|Tasks|Owns (files)|Rubric marks|
-|-|-|-|-|-|
-|**Kevin Emmanuel Rusli**|*105801758*|Data processing, **Integration A2A**, test lead|`src/data/\*`, `src/graph/build\_graph.py`, `src/search/adapter.py`, `src/search/top\_k.py`, `src/routing/route\_finder.py`, `src/prediction/predictor.py`, `main.py`|Data 9, Integration 15, Testing 10|
-|**Hassan Ali Shah Syed**|*id*|**Model 1 (LSTM)**, **Calculation of time**|`src/models/lstm.py`, `src/training/train.py`, `src/routing/travel\_time.py`|ML 7|
-|**Ali Murtaza Shah Syed**|*id*|**Model 2 (GRU)**, **GUI**|`src/models/gru.py`, `app/gui.py`|ML 7|
-|**Sakib Ahmed**|*id*|**Model 3** (needs tutor approval), **evaluation**, **Research**|`src/models/third\_model.py`, `src/evaluation/\*`, `results/`|ML 7, Evaluation 15, Research 15|
-|All||Report sections (see `docs/REPORT\_PLAN.md`)|`report/`|Report 15|
+| Member | Student ID | Tasks | Owns (files) | Rubric marks |
+|---|---|---|---|---|
+| **Kevin Emmanuel Rusli** | _105801758_ | Data processing, **Integration A2A**, test lead | `src/data/*`, `src/graph/build_graph.py`, `src/search/adapter.py`, `src/search/top_k.py`, `src/routing/route_finder.py`, `src/prediction/predictor.py`, `main.py` | Data 9, Integration 15, Testing 10 |
+| **Hassan Ali Shah Syed** | _id_ | **Model 1 (LSTM)**, **Calculation of time** | `src/models/lstm.py`, `src/training/train.py`, `src/routing/travel_time.py` | ML 7 |
+| **Ali Murtaza Shah Syed** | _104407320_ | **Model 2 (GRU)**, **GUI** | `src/models/gru.py`, `app/gui.py` | ML 7 |
+| **Sakib Ahmed** | _id_ | **Model 3** (needs tutor approval), **evaluation**, **Research** | `src/models/third_model.py`, `src/evaluation/*`, `results/` | ML 7, Evaluation 15, Research 15 |
+| All | | Report sections (see `docs/REPORT_PLAN.md`) | `report/` | Report 15 |
 
 > Swap names freely if the team agrees, but keep one owner per file.
 
