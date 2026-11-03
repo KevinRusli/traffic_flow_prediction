@@ -1,0 +1,67 @@
+# =============================================================================
+# TBRGS default configuration
+# Every module reads its defaults from here (via src/config.py).
+# The GUI lets the user override these at runtime; this file holds the defaults.
+# =============================================================================
+
+paths:
+  scats_data: "data/raw/Scats Data October 2006.xls"
+  site_listing: "data/raw/SCATSSiteListingSpreadsheet_VicRoads.xls"
+  processed_dir: "data/processed"
+  models_dir: "models/saved"
+  results_dir: "results"
+
+data:
+  sheet_name: "Data"
+  header_row: 1              # the real column header is on the 2nd row of the sheet
+  interval_minutes: 15       # V00..V95 = 96 x 15-minute counts per day
+  lags: 12                   # input window length (12 x 15 min = 3 hours)
+  horizon: 1                 # predict 1 step (15 min) ahead
+  train_end_date: "2006-10-24"   # chronological split: train <= this date < test
+  scaler: "minmax"           # minmax | standard
+  # Known offset between dataset lat/lon and real intersections (see docs/DATA_NOTES.md).
+  coord_offset:
+    lat: 0.0015
+    lon: 0.0013
+
+models:
+  available: ["lstm", "gru", "third"]   # "third" = Model 3, chosen by Sakib
+  default: "lstm"
+  training:
+    epochs: 50
+    batch_size: 256
+    learning_rate: 0.001
+    validation_split: 0.1
+    early_stopping_patience: 5
+    random_seed: 42
+  lstm:
+    units: [64, 64]
+    dropout: 0.2
+  gru:
+    units: [64, 64]
+    dropout: 0.2
+  third:
+    name: "TODO"            # e.g. "random_forest", "xgboost", "tcn", "saes"
+    params: {}
+
+prediction:
+  # How to turn the per-approach predictions of a SCATS site into one number.
+  site_flow_aggregation: "mean"   # mean | sum
+  # Which site's flow is used for an edge A -> B. The spec says "site B",
+  # the conversion PDF says "starting site". Confirm with tutor, then fix here.
+  edge_flow_site: "destination"   # destination | origin
+
+routing:
+  k_paths: 5
+  search_method: "AS"             # 2A method name: DFS, BFS, GBFS, AS, CUS1, CUS2 (AS = optimal)
+  speed_limit_kmh: 60
+  intersection_delay_s: 30
+  capacity_flow_vph: 1500         # flow at capacity (turning point of the parabola)
+  capacity_speed_kmh: 32          # speed at capacity
+  flow_speed_a: -1.4648375        # flow = a * speed^2 + b * speed
+  flow_speed_b: 93.75
+
+gui:
+  default_origin: 2000
+  default_destination: 3002
+  default_datetime: "2006-10-15 08:00"

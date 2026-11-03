@@ -1,0 +1,5 @@
+# Excluded from `git archive` -> not in the submission zip (scripts/make_submission.sh)
+reference/ export-ignore
+.github/ export-ignore
+notebooks/ export-ignore
+*.ipynb linguist-documentation

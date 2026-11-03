@@ -1,0 +1,20 @@
+# Core
+numpy>=1.26
+pandas>=2.1
+xlrd>=2.0          # needed to read the old .xls SCATS files
+pyyaml>=6.0
+joblib>=1.3
+
+# Machine learning
+scikit-learn>=1.4
+tensorflow>=2.15   # LSTM / GRU (Keras). Swap for torch if the team prefers PyTorch.
+
+# Visualisation + GUI
+matplotlib>=3.8
+seaborn>=0.13
+streamlit>=1.35
+pydeck>=0.8
+
+# Dev
+pytest>=8.0
+flake8>=7.0
