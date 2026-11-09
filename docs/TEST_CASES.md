@@ -10,15 +10,15 @@ Unimplemented code shows as **XFAIL** ("not implemented yet"); it flips to PASS/
 
 | ID | Area | Scenario | Expected | Owner | Result |
 |---|---|---|---|---|---|
-| TC01 | Data | Load raw workbook | 40 sites, V00-V95 present, no duplicate rows | Kevin | |
-| TC02 | Data | Wide -> long | 96 rows per day, 15-min spacing, flow >= 0 | Kevin | |
-| TC03 | Data | Fix coordinates | No 0 lat/lon (site 4266 fixed) | Kevin | |
-| TC04 | Data | Sliding windows toy series | `[1..5]`, lags 3 -> 2 windows | Kevin | |
-| TC05 | Data | Chronological split | max(train time) < min(test time) | Kevin | |
-| TC06 | Data | build_dataset | correct shapes, train scaled to [0,1] | Kevin | |
-| TC07 | Graph | Parse location strings | `"HIGH_ST NE OF HARP_ST"` -> (road, dir, cross road) | Kevin | |
-| TC08 | Graph | Real graph | 40 nodes, every node has an edge | Kevin | |
-| TC09 | Graph | Connectivity | 2000 -> 3002 reachable | Kevin | |
+| TC01 | Data | Load raw workbook | 40 sites, 140 locations (4335 split into 2 detectors), one row per location per day | Kevin | PASS |
+| TC02 | Data | Wide -> long | 96 rows per day, 15-min spacing, flow >= 0 | Kevin | PASS |
+| TC03 | Data | Fix coordinates | No 0 lat/lon (site 4266 fixed) | Kevin | PASS |
+| TC04 | Data | Sliding windows toy series | `[1..5]`, lags 3 -> 2 windows | Kevin | PASS |
+| TC05 | Data | Chronological split | max(train time) < min(test time) | Kevin | PASS |
+| TC06 | Data | build_dataset | correct shapes, train scaled to [0,1] | Kevin | PASS |
+| TC07 | Graph | Parse location strings | `"HIGH_ST NE OF HARP_ST"` -> (road, dir, cross road) | Kevin | PASS |
+| TC08 | Graph | Real graph | 40 nodes, every node has an edge | Kevin | PASS |
+| TC09 | Graph | Connectivity | 2000 -> 3002 reachable | Kevin | PASS |
 | TC10 | Graph | Shared RoadGraph class | adjacency + haversine work | Kevin | PASS |
 | TC11 | Models | fit/predict for lstm, gru, third | output shape (n,), finite | Hassan / Ali / Sakib | |
 | TC12 | Models | save -> load round-trip | identical predictions | Hassan / Ali / Sakib | |
@@ -37,6 +37,8 @@ Unimplemented code shows as **XFAIL** ("not implemented yet"); it flips to PASS/
 | TC25 | End-to-end | Trained model, 8am vs 3am | peak not faster than night | All | |
 | TC26 | Search | Adapter heuristic on a 3x3 grid | h(n) <= real cheapest time from every node (A* stays optimal) | Kevin | PASS |
 | TC27 | Routing | Road names for the GUI | consecutive same-road segments merged, minutes and km summed | Kevin | PASS |
+| TC29 | Data | Query time outside Oct 2006 | maps to same weekday + time inside the data | Kevin | PASS |
+| TC30 | Prediction | ModelPredictor with a stand-in model | per-15-min prediction x 4 = vehicles/hour, same 15-min slot cached, unknown site -> ValueError | Kevin | PASS |
 | TC28 | Search | Yen vs brute force on a 3x3 grid | top-5 costs equal the 5 cheapest of ALL simple paths | Kevin | PASS |
 
 ### Extra ideas (add as TC26+ if time allows)

@@ -58,6 +58,7 @@ def make_windows(series: np.ndarray, lags: int, horizon: int = 1) -> tuple[np.nd
     n = len(series) - lags - horizon + 1
     if n <= 0:
         return np.empty((0, lags)), np.empty(0)
+    # row i of X is series[i : i + lags]
     X = np.lib.stride_tricks.sliding_window_view(series, lags)[:n]
     y = series[lags + horizon - 1: lags + horizon - 1 + n]
     return X.copy(), y.copy()
@@ -75,12 +76,14 @@ def chronological_split(df_long: pd.DataFrame, train_end_date: str) -> tuple[pd.
 def _continuous_segments(group: pd.DataFrame, interval_minutes: int):
     """Yield runs of one location's rows with no missing 15-minute interval."""
     group = group.sort_values("timestamp")
+    # True where a new run starts; the running count numbers the runs 1, 2, 3, ...
     gap = group["timestamp"].diff() != pd.Timedelta(minutes=interval_minutes)
     for _, segment in group.groupby(gap.cumsum()):
         yield segment
 
 
 def _make_scaler(kind: str):
+    """Scaler named in config.yaml (data.scaler)."""
     if kind == "minmax":
         return MinMaxScaler()
     if kind == "standard":
@@ -148,13 +151,17 @@ def latest_window(df_long: pd.DataFrame, location: str, end_time: pd.Timestamp, 
     time_of_day = end_time - end_time.normalize()
 
     def window_at(t: pd.Timestamp):
+        """The `lags` flows before t, or None if any of them is missing."""
         wanted = pd.date_range(t - lags * step, periods=lags, freq=step)
         values = series.reindex(wanted)
         return None if values.isna().any() else values.to_numpy()
 
+    # try the exact time, then the same time on the same weekday (latest first),
+    # then the same time on any day
     days = sorted(series.index.normalize().unique(), reverse=True)
     same_weekday = [d for d in days if d.dayofweek == end_time.dayofweek]
-    for t in [end_time] + [d + time_of_day for d in same_weekday + days]:
+    candidates = [end_time] + [d + time_of_day for d in same_weekday + days]
+    for t in candidates:
         window = window_at(t)
         if window is not None:
             return window

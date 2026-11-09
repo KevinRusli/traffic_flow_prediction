@@ -59,6 +59,8 @@ class Route:
 
 
 class RouteFinder:
+    """Glue between the graph, the flow predictor, travel_time.py and the 2A search."""
+
     def __init__(self, graph: RoadGraph, predictor: FlowPredictor, cfg: dict | None = None) -> None:
         self.graph = graph
         self.predictor = predictor
@@ -103,6 +105,7 @@ class RouteFinder:
         return [self._to_route(r.path, cost_fn) for r in results]
 
     def _to_route(self, path: list[int], cost_fn) -> Route:
+        """Turn a list of sites into a Route with road name, km and seconds per edge."""
         segments = []
         for a, b in zip(path, path[1:]):
             edge = next(e for e in self.graph.neighbours(a) if e.dst == b)

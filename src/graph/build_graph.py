@@ -20,11 +20,9 @@ Edge length is the straight-line distance between the two sites.
 """
 from __future__ import annotations
 
-import math
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 
-import numpy as np
 import pandas as pd
 
 from src.graph.graph import Node, RoadGraph
@@ -64,27 +62,35 @@ def display_name(road: str) -> str:
 
 
 def _canonical_road(site: int, road: str) -> str:
+    """One name per physical road (applies ROAD_ALIASES, then SITE_ROAD_OVERRIDES)."""
     road = ROAD_ALIASES.get(road, road)
     return SITE_ROAD_OVERRIDES.get((site, road), road)
 
 
 def site_roads(df_long: pd.DataFrame) -> dict[int, list[str]]:
     """Roads each site lies on, most frequently named first."""
-    counts: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    for (site, location), _ in df_long.groupby(["scats", "location"]):
+    counts: dict[int, Counter] = defaultdict(Counter)
+    pairs = df_long[["scats", "location"]].drop_duplicates()
+    for site, location in pairs.itertuples(index=False):
         road, _, cross = parse_location(location)
-        for r in (road, cross):
-            counts[site][_canonical_road(site, r)] += 1
+        counts[site][_canonical_road(site, road)] += 1
+        counts[site][_canonical_road(site, cross)] += 1
+    # most named road first; ties broken alphabetically so the order never changes
     return {site: sorted(c, key=lambda r: (-c[r], r)) for site, c in counts.items()}
 
 
 def _order_along_road(graph: RoadGraph, sites: list[int]) -> list[int]:
-    """Sort sites by their position along the road's main direction."""
-    lat0 = math.radians(np.mean([graph.nodes[s].lat for s in sites]))
-    xy = np.array([[graph.nodes[s].lon * math.cos(lat0), graph.nodes[s].lat] for s in sites])
-    centred = xy - xy.mean(axis=0)
-    direction = np.linalg.svd(centred)[2][0]
-    return [sites[i] for i in np.argsort(centred @ direction)]
+    """Sort a road's sites from one end to the other.
+
+    A road that spreads more north-south than east-west is sorted by latitude,
+    otherwise by longitude. Every Boroondara road in the dataset runs mostly in
+    one direction, so this puts its sites in driving order.
+    """
+    lats = [graph.nodes[s].lat for s in sites]
+    lons = [graph.nodes[s].lon for s in sites]
+    if max(lats) - min(lats) >= max(lons) - min(lons):
+        return sorted(sites, key=lambda s: graph.nodes[s].lat)
+    return sorted(sites, key=lambda s: graph.nodes[s].lon)
 
 
 def build_graph(df_long: pd.DataFrame) -> RoadGraph:
@@ -94,6 +100,7 @@ def build_graph(df_long: pd.DataFrame) -> RoadGraph:
     coords = df_long.groupby("scats")[["lat", "lon"]].median()
     locations = df_long.groupby("scats")["location"].unique()
 
+    # nodes: one per site, named after its two main roads, e.g. "Warrigal Rd / Toorak Rd"
     for site in sorted(roads_of):
         name = " / ".join(display_name(r) for r in roads_of[site][:2])
         graph.add_node(Node(int(site), float(coords.at[site, "lat"]), float(coords.at[site, "lon"]),
@@ -104,6 +111,7 @@ def build_graph(df_long: pd.DataFrame) -> RoadGraph:
         for road in roads:
             sites_on[road].append(site)
 
+    # edges: link neighbouring sites along each road
     for road, sites in sorted(sites_on.items()):
         if len(sites) < 2:
             continue
@@ -111,6 +119,7 @@ def build_graph(df_long: pd.DataFrame) -> RoadGraph:
         for a, b in zip(ordered, ordered[1:]):
             _add_two_way(graph, a, b, display_name(road))
 
+    # a site alone on all its roads is linked to the closest site instead
     for site in sorted(graph.nodes):
         if not graph.neighbours(site):
             nearest = min((s for s in graph.nodes if s != site), key=lambda s: graph.haversine_km(site, s))
@@ -119,5 +128,6 @@ def build_graph(df_long: pd.DataFrame) -> RoadGraph:
 
 
 def _add_two_way(graph: RoadGraph, a: int, b: int, road: str) -> None:
+    """Add a -> b and b -> a; the length is the straight-line distance."""
     graph.add_edge(a, b, road=road)
     graph.add_edge(b, a, road=road)

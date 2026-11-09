@@ -21,6 +21,8 @@ CostFn = Callable[[Edge], float]
 
 
 class TravelTimeProblem:
+    """A search problem on the road graph, shaped like 2A's problem.py."""
+
     def __init__(
         self,
         road_graph: RoadGraph,
@@ -48,12 +50,15 @@ class TravelTimeProblem:
                     if edge.dst in banned_nodes or (edge.src, edge.dst) in banned_edges:
                         continue
                     out.append((edge.dst, cost_fn(edge)))
+            # ascending site number, the same tie-break order as in 2A
             self.graph[site] = sorted(out)
 
     def neighbors(self, n: int) -> list[tuple[int, float]]:
+        """(next site, seconds) pairs reachable from n in one edge."""
         return self.graph.get(n, [])
 
     def is_goal(self, n: int) -> bool:
+        """True if n is one of the destinations."""
         return n in self.destinations
 
     def h(self, n: int) -> float:

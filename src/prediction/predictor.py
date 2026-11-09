@@ -53,6 +53,7 @@ class ModelPredictor(FlowPredictor):
         self.model_name = model_name
         models_dir = resolve_path(self.cfg["paths"]["models_dir"])
 
+        # imported here so tests that pass a model in never load TensorFlow
         if model is None:
             from src.models.registry import get_model_class
             model = get_model_class(model_name).load(models_dir / model_name)
@@ -79,14 +80,17 @@ class ModelPredictor(FlowPredictor):
         return self._cache[key]
 
     def _predict(self, scats: int, when: pd.Timestamp) -> float:
+        """Predict every approach of the site, then combine them into one veh/h value."""
         if scats not in self._locations:
             raise ValueError(f"No traffic data for SCATS site {scats}")
+        # one row of `lags` raw flows per approach
         windows = np.array([
             latest_window(self._by_location[loc], loc, when, self.lags)
             for loc in self._locations[scats]
         ])
+        # the scaler was fitted on a single flow column, so scale the values one by one
         scaled = self.scaler.transform(windows.reshape(-1, 1)).reshape(windows.shape)
         predicted = self.model.predict(scaled.astype("float32"))
         per_interval = self.scaler.inverse_transform(np.reshape(predicted, (-1, 1))).ravel()
-        per_interval = np.clip(per_interval, 0, None)
+        per_interval = np.clip(per_interval, 0, None)   # a model can predict slightly below 0
         return float(self.aggregate(per_interval) * self.per_hour)

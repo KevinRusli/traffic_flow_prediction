@@ -25,9 +25,12 @@ import numpy as np
 import pandas as pd
 
 from src.config import load_config, resolve_path
+from src.graph.build_graph import parse_location
 
 VOLUME_COLUMNS = [f"V{i:02d}" for i in range(96)]
 LONG_COLUMNS = ["scats", "location", "lat", "lon", "timestamp", "flow"]
+# real-world coordinates of VicRoads count points, only used if a whole site has none
+COUNTS_CSV = "data/raw/Traffic_Count_Locations_with_LONG_LAT.csv"
 
 _RENAME = {
     "SCATS Number": "scats",
@@ -104,7 +107,7 @@ def fix_coordinates(df: pd.DataFrame, counts_csv: str | Path | None = None) -> p
     df.loc[~missing, "lat"] += off["lat"]
     df.loc[~missing, "lon"] += off["lon"]
 
-    counts = None
+    counts = None   # the 14 MB CSV is only read if it is really needed
     for site in df.loc[missing, "scats"].unique():
         rows = missing & (df["scats"] == site)
         known = ~missing & (df["scats"] == site)
@@ -113,8 +116,7 @@ def fix_coordinates(df: pd.DataFrame, counts_csv: str | Path | None = None) -> p
             lat, lon = df.loc[known, "lat"].median(), df.loc[known, "lon"].median()
         else:
             if counts is None:
-                csv_path = resolve_path(counts_csv or "data/raw/Traffic_Count_Locations_with_LONG_LAT.csv")
-                counts = pd.read_csv(csv_path, usecols=["X", "Y", "SITE_DESC"])
+                counts = pd.read_csv(resolve_path(counts_csv or COUNTS_CSV), usecols=["X", "Y", "SITE_DESC"])
             lat, lon = _lookup_site(df[df["scats"] == site]["location"].unique(), counts)
         df.loc[rows, "lat"], df.loc[rows, "lon"] = lat, lon
     return df
@@ -122,8 +124,6 @@ def fix_coordinates(df: pd.DataFrame, counts_csv: str | Path | None = None) -> p
 
 def _lookup_site(locations, counts: pd.DataFrame) -> tuple[float, float]:
     """Median real-world (lat, lon) of count points whose description names both roads."""
-    from src.graph.build_graph import parse_location
-
     road, _, cross = parse_location(locations[0])
     a, b = (r.replace("_", " ").upper() for r in (road, cross))
     desc = counts["SITE_DESC"].fillna("").str.upper()

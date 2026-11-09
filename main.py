@@ -41,13 +41,20 @@ def cmd_route(args: argparse.Namespace) -> None:
     from src.prediction.predictor import ConstantPredictor, ModelPredictor
     from src.routing.route_finder import RouteFinder
 
+    try:
+        when = datetime.strptime(args.time, "%Y-%m-%d %H:%M")
+    except ValueError:
+        sys.exit(f'Error: --time must look like "2006-10-15 08:00", got "{args.time}"')
+
     cfg = load_config(args.config)
     graph = build_graph(load_long())
     predictor = ConstantPredictor() if args.model == "constant" else ModelPredictor(args.model, cfg)
     finder = RouteFinder(graph, predictor, cfg)
-    when = datetime.strptime(args.time, "%Y-%m-%d %H:%M")
 
-    routes = finder.find_routes(args.origin, args.dest, when, k=args.k, method=args.method)
+    try:
+        routes = finder.find_routes(args.origin, args.dest, when, k=args.k, method=args.method)
+    except ValueError as exc:            # unknown SCATS site
+        sys.exit(f"Error: {exc}")
     if not routes:
         print(f"No route found from {args.origin} to {args.dest}.")
         return

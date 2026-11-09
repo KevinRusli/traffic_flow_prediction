@@ -25,7 +25,7 @@ from src.search.methods import get_search
 class SearchResult:
     path: list[int]          # SCATS sites from origin to destination
     cost: float              # total travel time in seconds
-    nodes_created: int = 0   # summed over every 2A search Yen ran for this route
+    nodes_created: int = 0   # nodes created by the 2A search that found this route
 
 
 def k_shortest_paths(
@@ -41,11 +41,13 @@ def k_shortest_paths(
     search = get_search(method)
 
     def run(start: int, banned_nodes=(), banned_edges=()):
+        """One 2A search from `start` to the goal -> (path or None, nodes created)."""
         problem = TravelTimeProblem(graph, start, [goal], cost_fn, speed_limit_kmh,
                                     banned_nodes, banned_edges)
         found, created, path = search(problem)
         return (path if found is not None else None), created
 
+    # nothing hidden: used to price every route on the full graph
     full = TravelTimeProblem(graph, origin, [goal], cost_fn, speed_limit_kmh)
 
     first, created = run(origin)
@@ -59,6 +61,8 @@ def k_shortest_paths(
         prev = accepted[-1].path
         for i in range(len(prev) - 1):
             spur, root = prev[i], prev[: i + 1]
+            # leave the spur by an edge no accepted route with this root has used,
+            # and never go back through the root (keeps the route loopless)
             banned_edges = {(r.path[i], r.path[i + 1]) for r in accepted
                             if len(r.path) > i + 1 and r.path[: i + 1] == root}
             banned_nodes = set(root[:-1])
