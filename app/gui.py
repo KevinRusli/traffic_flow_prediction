@@ -1,29 +1,6 @@
-"""TBRGS graphical user interface (Streamlit).
+"""TBRGS GUI (Streamlit).
 
-OWNER: Ali Murtaza (GUI)
-
-Run:
-    streamlit run app/gui.py        (or: python main.py gui)
-
-What the tutor asked for: like a SIMPLE Google Maps. For each route show the
-total minutes and which roads it takes. Nothing more fancy than that.
-
-Required by the spec: user input, parameter settings, visualisation, and
-defaults from a configuration file (config.yaml).
-
-Layout (see docs/GUI_SPEC.md for the mockup):
-  Sidebar : origin, destination, date + time, model, search method, k
-  Main    : map with the routes drawn (fastest = thick, alternatives = thin)
-            one card per route: "Route 1 - Fastest - 14 min"
-                                "Warrigal Rd -> Riversdale Rd -> Burke Rd"
-                                "6.2 km - 5 intersections"
-
-Everything you need is on the Route objects returned by RouteFinder.find_routes():
-    route.travel_time_min, route.distance_km, route.roads, route.path, route.segments
-    graph.nodes[site].lat / .lon   for the map coordinates
-
-Develop it TODAY with ConstantPredictor and a fake graph; nothing here has to
-wait for the ML models.
+Run: streamlit run app/gui.py
 """
 from __future__ import annotations
 
@@ -31,11 +8,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import pydeck as pdk
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import load_config  # noqa: E402
+from src.data.loader import load_long  # noqa: E402
+from src.graph.build_graph import build_graph  # noqa: E402
+from src.prediction.predictor import ConstantPredictor, ModelPredictor  # noqa: E402
+from src.routing.route_finder import RouteFinder  # noqa: E402
 from src.search.methods import SEARCH_METHODS  # noqa: E402
 
 cfg = load_config()
@@ -62,39 +44,85 @@ with st.sidebar:
 
 @st.cache_resource
 def load_finder(model: str):
-    """Build graph + predictor + RouteFinder once per model.
-
-    TODO(Ali Murtaza):
-        from src.data.loader import load_long
-        from src.graph.build_graph import build_graph
-        from src.prediction.predictor import ConstantPredictor, ModelPredictor
-        from src.routing.route_finder import RouteFinder
-        graph = build_graph(load_long())
-        predictor = ModelPredictor(model, cfg)      # ConstantPredictor() while models aren't trained
-        return RouteFinder(graph, predictor, cfg)
-    """
-    raise NotImplementedError("Ali Murtaza: implement load_finder()")
+    graph = build_graph(load_long())
+    try:
+        predictor = ModelPredictor(model, cfg)
+    except FileNotFoundError:
+        st.warning(f"No trained '{model}' model found yet - using ConstantPredictor for now.")
+        predictor = ConstantPredictor()
+    return RouteFinder(graph, predictor, cfg)
 
 
 def draw_map(graph, routes) -> None:
-    """TODO(Ali Murtaza): st.pydeck_chart with an OpenStreetMap-style base map.
+    site_points = [
+        {"lat": node.lat, "lon": node.lon, "label": str(sid), "color": [100, 100, 100]}
+        for sid, node in graph.nodes.items()
+    ]
+    # green = origin, red = destination, so they're easy to spot on the map
+    for sid, color in ((routes[0].path[0], [0, 160, 0]), (routes[0].path[-1], [200, 0, 0])):
+        for pt in site_points:
+            if pt["label"] == str(sid):
+                pt["color"] = color
 
-    - ScatterplotLayer: every SCATS site (graph.nodes[s].lat/.lon), origin and
-      destination in a different colour
-    - PathLayer: one line per route; route 1 thick + strong colour, others thin + grey
-    """
-    raise NotImplementedError("Ali Murtaza: implement draw_map()")
+    path_layers = []
+    for rank, route in enumerate(routes, 1):
+        coords = [[graph.nodes[s].lon, graph.nodes[s].lat] for s in route.path]
+        is_fastest = rank == 1
+        path_layers.append(pdk.Layer(
+            "PathLayer",
+            data=[{"path": coords}],
+            get_path="path",
+            get_width=6 if is_fastest else 2,
+            get_color=[0, 120, 255] if is_fastest else [160, 160, 160],
+            width_min_pixels=6 if is_fastest else 2,
+        ))
+
+    site_layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=site_points,
+        get_position=["lon", "lat"],
+        get_fill_color="color",
+        get_radius=40,
+        pickable=True,
+    )
+
+    origin_node = graph.nodes[routes[0].path[0]]
+    view_state = pdk.ViewState(latitude=origin_node.lat, longitude=origin_node.lon, zoom=12)
+
+    st.pydeck_chart(pdk.Deck(
+        layers=[site_layer, *path_layers],
+        initial_view_state=view_state,
+        map_style="road",
+        tooltip={"text": "Site {label}"},
+    ))
 
 
 def route_card(rank: int, route) -> None:
-    """TODO(Ali Murtaza): one bordered container per route.
+    with st.container(border=True):
+        title_col, time_col = st.columns([4, 1])
+        with title_col:
+            label = f"Route {rank}"
+            if rank == 1:
+                label += "  🟢 Fastest"
+            st.markdown(f"**{label}**")
+        with time_col:
+            st.markdown(f"**{route.travel_time_min:.0f} min**")
 
-    Title "Route {rank}" (+ "Fastest" badge for rank 1), big "{minutes} min" on the right,
-    below: " -> ".join(route.roads), distance in km, number of intersections
-    (len(route.path) - 1). Optional: st.expander with the per-segment table
-    (route.segments: road, from site, to site, minutes).
-    """
-    raise NotImplementedError("Ali Murtaza: implement route_card()")
+        st.write(" → ".join(route.roads) if route.roads else " → ".join(str(s) for s in route.path))
+        st.caption(f"{route.distance_km:.1f} km · {len(route.path) - 1} intersections")
+
+        if route.segments:
+            with st.expander("Segment detail"):
+                st.table([
+                    {
+                        "From": seg.src,
+                        "To": seg.dst,
+                        "Road": seg.road,
+                        "Distance (km)": round(seg.distance_km, 2),
+                        "Time (min)": round(seg.time_s / 60, 1),
+                    }
+                    for seg in route.segments
+                ])
 
 
 if find:
@@ -108,7 +136,5 @@ if find:
             draw_map(finder.graph, routes)
             for rank, route in enumerate(routes, 1):
                 route_card(rank, route)
-    except ValueError as exc:            # invalid SCATS site etc.
+    except ValueError as exc:
         st.error(str(exc))
-    except NotImplementedError as exc:   # template parts not done yet
-        st.info(f"Not implemented yet: {exc}")
