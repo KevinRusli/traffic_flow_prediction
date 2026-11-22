@@ -1,6 +1,6 @@
 """Random Forest model for traffic-flow prediction.
 
-OWNER: Sakib Ahmed 
+OWNER: Sakib Ahmed
 
 Uses the shared 2-D lag windows and returns scaled next-interval predictions.
 """

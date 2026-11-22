@@ -21,15 +21,15 @@ import matplotlib
 import numpy as np
 import pandas as pd
 
-# Save figures without opening windows, including when run from the CLI or tests.
-matplotlib.use("Agg")
-from matplotlib import dates as mdates, pyplot as plt  # noqa: E402
-
 from src.config import load_config, resolve_path
 from src.data.loader import load_long
 from src.data.preprocess import build_dataset
 from src.evaluation.metrics import all_metrics
 from src.models.registry import get_model_class
+
+# Save figures without opening windows, including when run from the CLI or tests.
+matplotlib.use("Agg")
+from matplotlib import dates as mdates, pyplot as plt  # noqa: E402
 
 METRIC_NAMES = ["MAE", "RMSE", "NRMSE", "MAPE", "R2"]
 LABELS = {"lstm": "LSTM", "gru": "GRU", "third": "Random Forest"}
