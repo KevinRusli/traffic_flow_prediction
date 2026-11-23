@@ -3,6 +3,7 @@
     python main.py train    --model lstm|gru|third|all
     python main.py evaluate
     python main.py route    --origin 2000 --dest 3002 --time "2006-10-15 08:00" [--model gru] [--k 5] [--method AS]
+    python main.py research [--model third]
     python main.py gui
 """
 from __future__ import annotations
@@ -65,6 +66,16 @@ def cmd_route(args: argparse.Namespace) -> None:
         print(f"     sites: {' -> '.join(str(s) for s in route.path)}")
 
 
+def cmd_research(args: argparse.Namespace) -> None:
+    from src.data.loader import load_long
+    from src.graph.build_graph import build_graph
+    from src.research.search_study import run_study
+
+    tables = run_study(build_graph(load_long()), load_config(args.config), args.model)
+    for name, table in tables.items():
+        print(f"\n{name}\n{table.round(2).to_string()}")
+
+
 def cmd_gui(_: argparse.Namespace) -> None:
     subprocess.run([sys.executable, "-m", "streamlit", "run", str(ROOT / "app" / "gui.py")], check=False)
 
@@ -92,6 +103,11 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--method", default=cfg["routing"]["search_method"],
                    choices=["DFS", "BFS", "GBFS", "AS", "CUS1", "CUS2"], type=str.upper)
     r.set_defaults(func=cmd_route)
+
+    s = sub.add_parser("research", help="compare the 2A methods and models on every site pair")
+    s.add_argument("--model", default="third", choices=cfg["models"]["available"],
+                   help="model whose predictions are the reference")
+    s.set_defaults(func=cmd_research)
 
     g = sub.add_parser("gui", help="launch the Streamlit GUI")
     g.set_defaults(func=cmd_gui)

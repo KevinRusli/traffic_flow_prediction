@@ -1,0 +1,12 @@
+Evaluated 3 of 3 configured models on the same 86016 test targets.
+Training cutoff: 2006-10-24; lags: 12.
+Saved models must have been trained using this configuration and shared scaler.
+MAE/RMSE: vehicles per 15 min; NRMSE: RMSE / mean actual flow (ratio).
+MAPE: percentage, denominator clipped to at least 1 vehicle, including zero counts.
+Inference time covers one predict call on the complete test set; loading is excluded.
+Training time is the recorded fit time, when available; it excludes data preparation and saving.
+Loss curves use saved histories only.
+Comparison run: 314,376 training-period windows; held-out targets dated October 25-31, 2006.
+LSTM and GRU each ran 6 epochs with batch size 512 and a 10% validation split within the training period.
+Random Forest used 100 trees, maximum depth 15, and at least 2 samples per leaf.
+The run used the team's shared trainer, MinMax scaler, and configured random seed of 42.

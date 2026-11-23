@@ -1,0 +1,6 @@
+scenario,trips,mean_trip_s,mean_edges,changed_pct,mean_lost_s,max_lost_s
+Random Forest 08:00,1560,494.236,4.454,0.0,0.0,0.0
+Free flow (no prediction),1560,447.663,4.45,10.192,10.52,16.392
+Random Forest 03:00,1560,447.663,4.45,10.192,10.52,16.392
+LSTM 08:00,1560,494.523,4.454,0.0,0.0,0.0
+GRU 08:00,1560,493.801,4.454,0.577,0.999,0.999
