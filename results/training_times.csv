@@ -1,3 +1,4 @@
 model,seconds,epochs
+lstm,125.1,6
 gru,104.7,6
-lstm,455.7,27
+third,37.7,0

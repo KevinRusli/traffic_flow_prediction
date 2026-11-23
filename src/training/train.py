@@ -76,8 +76,7 @@ def train_model(name: str, cfg: dict | None = None, ds=None) -> BaseTrafficModel
     # one row per model; re-training a model replaces its old row
     times_file = results_dir / "training_times.csv"
     times = pd.read_csv(times_file) if times_file.exists() else pd.DataFrame(columns=["model", "seconds", "epochs"])
-    # reset_index so the new row's index (len) can't overwrite another model's row
-    times = times[times["model"] != name].reset_index(drop=True)
+    times = times[times["model"] != name]
     times.loc[len(times)] = [name, round(seconds, 1), epochs]
     times.to_csv(times_file, index=False)
 
