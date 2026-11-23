@@ -66,7 +66,7 @@ class RouteFinder:
         self.predictor = predictor
         self.cfg = cfg or load_config()
 
-    def _edge_cost_fn(self, when: datetime):
+    def edge_cost_fn(self, when: datetime):
         """cost_fn(edge) -> seconds, cached so each edge is predicted once per query."""
         use_dest = self.cfg["prediction"]["edge_flow_site"] == "destination"
         cache: dict[tuple[int, int], float] = {}
@@ -98,7 +98,7 @@ class RouteFinder:
 
         k = k or self.cfg["routing"]["k_paths"]
         method = method or self.cfg["routing"]["search_method"]
-        cost_fn = self._edge_cost_fn(when)
+        cost_fn = self.edge_cost_fn(when)
 
         results = k_shortest_paths(self.graph, origin, destination, cost_fn, k, method,
                                    self.cfg["routing"]["speed_limit_kmh"])
