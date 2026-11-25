@@ -20,17 +20,17 @@ Unimplemented code shows as **XFAIL** ("not implemented yet"); it flips to PASS/
 | TC08 | Graph | Real graph | 40 nodes, every node has an edge | Kevin | PASS |
 | TC09 | Graph | Connectivity | 2000 -> 3002 reachable | Kevin | PASS |
 | TC10 | Graph | Shared RoadGraph class | adjacency + haversine work | Kevin | PASS |
-| TC11 | Models | fit/predict for lstm, gru, third | output shape (n,), finite | Hassan / Ali / Sakib | |
-| TC12 | Models | save -> load round-trip | identical predictions | Hassan / Ali / Sakib | |
+| TC11 | Models | fit/predict for lstm, gru, third | output shape (n,), finite | Hassan / Ali / Sakib | PASS (lstm, gru) |
+| TC12 | Models | save -> load round-trip | identical predictions | Hassan / Ali / Sakib | PASS (lstm, gru) |
 | TC13 | Eval | Metrics on known values | RMSE = sqrt(3), NRMSE = sqrt(3)/20, perfect R2 = 1 | Sakib | |
-| TC14 | Travel time | Flow -> speed reference points | 0/100/351 -> 60 km/h, 1500 -> 32 km/h | Hassan | |
-| TC15 | Travel time | 1 km at low flow | 60 s + 30 s delay = 90 s | Hassan | |
-| TC16 | Travel time | Monotonic | speed decreases from 400 to 1500 veh/h | Hassan | |
+| TC14 | Travel time | Flow -> speed reference points | 0/100/351 -> 60 km/h, 1500 -> 32 km/h | Hassan | PASS |
+| TC15 | Travel time | 1 km at low flow | 60 s + 30 s delay = 90 s | Hassan | PASS |
+| TC16 | Travel time | Monotonic | speed decreases from 400 to 1500 veh/h | Hassan | PASS |
 | TC17 | Search | 2A AS through the adapter | optimal path 1-2-4, cost 2 | Kevin | PASS |
 | TC18 | Search | All 6 unchanged 2A methods via adapter | valid path start->goal along real edges | Kevin | PASS |
 | TC19 | Search | Yen top-k | sorted, distinct, loopless, <= k | Kevin | PASS |
 | TC20 | Search | Unreachable goal | `None` / `[]`, no crash | Kevin | PASS |
-| TC21 | Routing | RouteFinder + ConstantPredictor | best route 1-2-4 = 180 s, via A Rd | Kevin (needs Hassan's travel time) | |
+| TC21 | Routing | RouteFinder + ConstantPredictor | best route 1-2-4 = 180 s, via A Rd | Kevin (needs Hassan's travel time) | PASS |
 | TC22 | Routing | Invalid SCATS number | `ValueError` | Kevin | PASS |
 | TC23 | Routing | Origin == destination | single-node route, 0 s | Kevin | PASS |
 | TC24 | End-to-end | 2000 -> 3002, real graph | 1-5 routes | Kevin | |
