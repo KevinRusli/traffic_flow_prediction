@@ -1,0 +1,17 @@
+Offset: 117/139 approaches matched (35/40 sites); fitted offset +0.00151 lat, +0.00130 lon; median error 203 m -> 3 m, 90th percentile 300 m -> 191 m; within 25 m: 0 -> 83 approaches
+
+Congestion (links per band):
+        model  hour  mean_speed  min_speed  Free flow  Slowed  Heavy
+         LSTM 03:00        60.0       60.0         52       0      0
+         LSTM 08:00        50.9       45.1          2      33     17
+         LSTM 17:00        53.2       46.1         14      29      9
+          GRU 03:00        60.0       60.0         52       0      0
+          GRU 08:00        51.1       45.4          2      36     14
+          GRU 17:00        53.3       46.1         14      29      9
+Random Forest 03:00        60.0       60.0         52       0      0
+Random Forest 08:00        50.9       44.6          3      32     17
+Random Forest 17:00        52.9       45.6         11      32      9
+
+Real roads: 52 links, detour factor median 1.01, mean 1.27, max 5.85; OSM path follows our road on 49/52 links
+
+Route effect at 08:00 (Random Forest): 143/1560 trips (9.2%) change route; mean trip 8.24 -> 8.92 min; time lost by the straight-line route: mean 16.4 s, max 83.2 s
