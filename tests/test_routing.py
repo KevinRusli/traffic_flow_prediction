@@ -5,7 +5,7 @@ import pytest
 
 from src.config import resolve_path
 from src.prediction.predictor import ConstantPredictor
-from src.routing.route_finder import Route, RouteFinder, Segment
+from src.routing.route_finder import Route, RouteFinder, Segment, path_time, site_pairs
 
 WHEN = datetime(2006, 10, 15, 8, 0)
 
@@ -89,3 +89,11 @@ def test_tc30_model_predictor_returns_vehicles_per_hour(toy_long_df):
     assert predictor.predict_flow(100, datetime(2006, 10, 2, 8, 7)) == pytest.approx(280.0)
     with pytest.raises(ValueError):
         predictor.predict_flow(999, datetime(2006, 10, 2, 8, 0))
+
+
+def test_site_pairs_and_path_time(toy_graph, grid_graph):
+    # helpers used by the OpenStreetMap research to route every trip
+    pairs = site_pairs(grid_graph)
+    assert len(pairs) == 9 * 8 and len(set(pairs)) == len(pairs) and all(a != b for a, b in pairs)
+    # 1 km at 60 km/h = 60 s, plus the 30 s delay, on each of the two edges of 1-2-4
+    assert path_time(toy_graph, [1, 2, 4], lambda edge: edge.distance_km * 60 + 30) == pytest.approx(180.0)

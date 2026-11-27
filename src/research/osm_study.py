@@ -43,7 +43,7 @@ import pandas as pd
 
 from src.config import load_config, resolve_path
 from src.graph.graph import RoadGraph
-from src.research.search_study import path_time, site_pairs
+from src.routing.route_finder import path_time, site_pairs
 from src.routing.travel_time import flow_to_speed
 from src.search.top_k import k_shortest_paths
 

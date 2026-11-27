@@ -9,11 +9,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from itertools import permutations
 
 from src.config import load_config
 from src.graph.graph import Edge, RoadGraph
 from src.prediction.predictor import FlowPredictor
 from src.routing.travel_time import edge_travel_time
+from src.search.adapter import CostFn, TravelTimeProblem
 from src.search.top_k import k_shortest_paths
 
 
@@ -111,3 +113,14 @@ class RouteFinder:
             edge = next(e for e in self.graph.neighbours(a) if e.dst == b)
             segments.append(Segment(a, b, edge.road, edge.distance_km, cost_fn(edge)))
         return Route(path, segments)
+
+
+# ---- helpers for studies that route every trip (used by src/research/osm_study.py) ----
+def site_pairs(graph: RoadGraph) -> list[tuple[int, int]]:
+    """Every (origin, destination) pair of different sites: 40 sites give 40 x 39 = 1,560 trips."""
+    return list(permutations(sorted(graph.nodes), 2))
+
+
+def path_time(graph: RoadGraph, path: list[int], cost_fn: CostFn) -> float:
+    """Seconds needed to drive `path` when each edge costs cost_fn(edge)."""
+    return TravelTimeProblem(graph, path[0], [path[-1]], cost_fn).path_cost(path)
