@@ -1,12 +1,9 @@
 # Test cases
 
 Rubric: **at least 15 test cases covering different scenarios, results checked and documented** (10 marks).
-The pytest suite already contains 28 numbered cases. Each owner fills the *Result* column once their part passes,
-and Kevin (test lead) copies the final table into the report's Testing section.
+The pytest suite contains 37 numbered cases (78 test functions once parametrised). All of them pass on the final code.
 
 Run everything: `pytest`  - one file: `pytest tests/test_search.py -v`
-
-Unimplemented code shows as **XFAIL** ("not implemented yet"); it flips to PASS/FAIL automatically once implemented.
 
 | ID | Area | Scenario | Expected | Owner | Result |
 |---|---|---|---|---|---|
@@ -20,28 +17,30 @@ Unimplemented code shows as **XFAIL** ("not implemented yet"); it flips to PASS/
 | TC08 | Graph | Real graph | 40 nodes, every node has an edge | Kevin | PASS |
 | TC09 | Graph | Connectivity | 2000 -> 3002 reachable | Kevin | PASS |
 | TC10 | Graph | Shared RoadGraph class | adjacency + haversine work | Kevin | PASS |
-| TC11 | Models | fit/predict for lstm, gru, third | output shape (n,), finite | Hassan / Ali / Sakib | PASS (lstm, gru) |
-| TC12 | Models | save -> load round-trip | identical predictions | Hassan / Ali / Sakib | PASS (lstm, gru) |
-| TC13 | Eval | Metrics on known values | RMSE = sqrt(3), NRMSE = sqrt(3)/20, perfect R2 = 1 | Sakib | |
-| TC14 | Travel time | Flow -> speed reference points | 0/100/351 -> 60 km/h, 1500 -> 32 km/h | Hassan | PASS |
+| TC11 | Models | fit/predict for lstm, gru, third | output shape (n,), finite | Hassan / Ali / Sakib | PASS (3/3) |
+| TC12 | Models | save -> load round-trip | identical predictions | Hassan / Ali / Sakib | PASS (3/3) |
+| TC13 | Eval | Metrics on known values | RMSE = sqrt(3), NRMSE = sqrt(3)/20, perfect R2 = 1 | Sakib | PASS |
+| TC14 | Travel time | Flow -> speed reference points | 0/100/351 -> 60 km/h, 1500 -> 32 km/h | Hassan | PASS (4/4) |
 | TC15 | Travel time | 1 km at low flow | 60 s + 30 s delay = 90 s | Hassan | PASS |
 | TC16 | Travel time | Monotonic | speed decreases from 400 to 1500 veh/h | Hassan | PASS |
 | TC17 | Search | 2A AS through the adapter | optimal path 1-2-4, cost 2 | Kevin | PASS |
-| TC18 | Search | All 6 unchanged 2A methods via adapter | valid path start->goal along real edges | Kevin | PASS |
+| TC18 | Search | All 6 unchanged 2A methods via adapter | valid path start->goal along real edges | Kevin | PASS (6/6) |
 | TC19 | Search | Yen top-k | sorted, distinct, loopless, <= k | Kevin | PASS |
 | TC20 | Search | Unreachable goal | `None` / `[]`, no crash | Kevin | PASS |
-| TC21 | Routing | RouteFinder + ConstantPredictor | best route 1-2-4 = 180 s, via A Rd | Kevin (needs Hassan's travel time) | PASS |
+| TC21 | Routing | RouteFinder + ConstantPredictor | best route 1-2-4 = 180 s, via A Rd | Kevin / Hassan | PASS |
 | TC22 | Routing | Invalid SCATS number | `ValueError` | Kevin | PASS |
 | TC23 | Routing | Origin == destination | single-node route, 0 s | Kevin | PASS |
-| TC24 | End-to-end | 2000 -> 3002, real graph | 1-5 routes | Kevin | |
-| TC25 | End-to-end | Trained model, 8am vs 3am | peak not faster than night | All | |
+| TC24 | End-to-end | 2000 -> 3002, real graph | 1-5 routes | Kevin | PASS |
+| TC25 | End-to-end | Trained model, 8am vs 3am | peak not faster than night | All | PASS (3/3) |
 | TC26 | Search | Adapter heuristic on a 3x3 grid | h(n) <= real cheapest time from every node (A* stays optimal) | Kevin | PASS |
 | TC27 | Routing | Road names for the GUI | consecutive same-road segments merged, minutes and km summed | Kevin | PASS |
+| TC28 | Search | Yen vs brute force on a 3x3 grid | top-5 costs equal the 5 cheapest of ALL simple paths | Kevin | PASS |
 | TC29 | Data | Query time outside Oct 2006 | maps to same weekday + time inside the data | Kevin | PASS |
 | TC30 | Prediction | ModelPredictor with a stand-in model | per-15-min prediction x 4 = vehicles/hour, same 15-min slot cached, unknown site -> ValueError | Kevin | PASS |
-| TC28 | Search | Yen vs brute force on a 3x3 grid | top-5 costs equal the 5 cheapest of ALL simple paths | Kevin | PASS |
-
-### Extra ideas (add as TC26+ if time allows)
-- GUI manual tests (screenshots in the report): invalid input, k = 1, different models give different routes
-- Same O/D at 5 different times of day -> travel time curve (nice figure for Insights)
-- Every pair of sites -> no crash, timing per query (performance)
+| TC31 | Research | Speed colour bands | green >= 55 km/h, amber 50-55, red < 50 | Sakib | PASS |
+| TC32 | Research | Coordinate offset study | recovers a known offset from matched count points | Sakib | PASS |
+| TC33 | Research | Link congestion colour | link takes the colour of its slower direction | Sakib | PASS |
+| TC34 | Research | Parse OSRM answer | real path, length and road names read correctly | Sakib | PASS |
+| TC35 | Research | Fetch OSM links | every link saved; an interrupted fetch resumes | Sakib | PASS |
+| TC36 | Research | Road check and detour factor | inferred road matched, real/straight length ratio computed | Sakib | PASS |
+| TC37 | Research | Real road lengths in routing | longer real roads change the recommended route | Sakib | PASS |
